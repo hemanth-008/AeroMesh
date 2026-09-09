@@ -96,9 +96,10 @@ function resizeViewer() {
 new ResizeObserver(resizeViewer).observe(container);
 resizeViewer();
 
-async function loadSplat(url) {
+async function loadSplat(url, format = null) {
   if (sceneLoaded) {
     sessionStorage.setItem('aeromesh_reload_splat', url);
+    if (format !== null) sessionStorage.setItem('aeromesh_reload_format', format.toString());
     window.location.reload();
     return;
   }
@@ -109,10 +110,12 @@ async function loadSplat(url) {
   statusPipeline.textContent = 'loading model';
 
   try {
-    await viewer.addSplatScene(url, {
+    const opts = {
       splatAlphaRemovalThreshold: 5,
       showLoadingUI: false,
-    });
+    };
+    if (format !== null) opts.format = format;
+    await viewer.addSplatScene(url, opts);
     sceneLoaded = true;
 
     if (!hasStarted) {
@@ -137,9 +140,11 @@ async function loadSplat(url) {
 
 // Reload swap
 const reloadUrl = sessionStorage.getItem('aeromesh_reload_splat');
+const reloadFormat = sessionStorage.getItem('aeromesh_reload_format');
 if (reloadUrl) {
   sessionStorage.removeItem('aeromesh_reload_splat');
-  setTimeout(() => loadSplat(reloadUrl), 500);
+  sessionStorage.removeItem('aeromesh_reload_format');
+  setTimeout(() => loadSplat(reloadUrl, reloadFormat !== null ? parseInt(reloadFormat) : null), 500);
 }
 
 // ── FPS ──
@@ -219,6 +224,14 @@ localSplatInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const fileUrl = URL.createObjectURL(file);
+  
+  let format = null;
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.ply')) format = GaussianSplats3D.SceneFormat.Ply;
+  else if (name.endsWith('.ksplat')) format = GaussianSplats3D.SceneFormat.KSplat;
+  else if (name.endsWith('.splat')) format = GaussianSplats3D.SceneFormat.Splat;
+  else if (name.endsWith('.spz')) format = GaussianSplats3D.SceneFormat.Spz;
+
   showToast('Loading local file: ' + file.name);
   
   // Set mock active stats for the UI
@@ -230,7 +243,7 @@ localSplatInput.addEventListener('change', async (e) => {
   areaEl.textContent = '4,200 m²';
   areaEl.classList.remove('placeholder');
   
-  loadSplat(fileUrl);
+  loadSplat(fileUrl, format);
 });
 
 async function pollStatus(jobId) {
