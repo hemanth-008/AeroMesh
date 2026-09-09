@@ -6,7 +6,3 @@ services:
     envVars:
       - key: PORT
         value: 8000
-    disk:
-      name: aeromesh-data
-      mountPath: /app/outputs
-      sizeGB: 1
