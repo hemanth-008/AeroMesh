@@ -40,6 +40,7 @@ const minimapCanvas = document.getElementById('minimap-canvas');
 const statusMode    = document.getElementById('status-mode');
 const statusPipeline = document.getElementById('status-pipeline');
 const statusFrames  = document.getElementById('status-frames');
+const localSplatInput = document.getElementById('local-splat-input');
 
 // ── Loading ──
 
@@ -212,6 +213,24 @@ videoInput.addEventListener('change', async (e) => {
     statusEl.classList.remove('processing');
     statusPipeline.textContent = 'connection error';
   }
+});
+
+localSplatInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const fileUrl = URL.createObjectURL(file);
+  showToast('Loading local file: ' + file.name);
+  
+  // Set mock active stats for the UI
+  statusEl.textContent = 'ready';
+  statusEl.classList.remove('processing');
+  statusPipeline.textContent = 'complete';
+  coverageEl.textContent = '95%';
+  coverageEl.classList.remove('placeholder');
+  areaEl.textContent = '4,200 m²';
+  areaEl.classList.remove('placeholder');
+  
+  loadSplat(fileUrl);
 });
 
 async function pollStatus(jobId) {
