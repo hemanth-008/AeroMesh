@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AeroMesh — Autonomous 3D infrastructure inspection from drone video using Gaussian Splatting." />
+  <title>AeroMesh</title>
+  <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+
+  <!-- Loading -->
+  <div id="loading-overlay">
+    <div class="loading-logo">AEROMESH</div>
+    <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+    <div class="loading-text">Initializing</div>
+  </div>
+
+  <!-- Toasts -->
+  <div id="toast-container"></div>
+
+  <!-- Export Modal -->
+  <div id="export-modal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+        <button class="modal-close" data-close-modal="export-modal">&times;</button>
+      </div>
+      <div class="export-options">
+        <div class="export-option" id="export-screenshot">
+          <div class="export-option-icon">⬇</div>
+          <div class="export-option-info">
+            <h4>Screenshot</h4>
+            <p>Capture current viewport as PNG</p>
+          </div>
+        </div>
+        <div class="export-option" id="export-report">
+          <div class="export-option-icon">⬇</div>
+          <div class="export-option-info">
+            <h4>Inspection Report</h4>
+            <p>Download HTML report with findings</p>
+          </div>
+        </div>
+        <div class="export-option" id="export-model">
+          <div class="export-option-icon">⬇</div>
+          <div class="export-option-info">
+            <h4>3D Model (.ply)</h4>
+            <p>Download Gaussian Splat model</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app">
+
+    <!-- Menu Bar -->
+    <header id="topbar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/></svg>
+        </div>
+        <span class="brand-text">AeroMesh</span>
+        <span class="brand-tag">v0.1</span>
+      </div>
+
+      <div class="menu-group">
+        <button class="menu-item" id="menu-file">File</button>
+        <button class="menu-item" id="menu-view">View</button>
+        <button class="menu-item" id="menu-tools">Tools</button>
+        <button class="menu-item" id="menu-help">Help</button>
+      </div>
+
+      <div class="mode-toggle" role="group">
+        <button class="mode-btn active" data-mode="rapid">Rapid</button>
+        <button class="mode-btn" data-mode="precision">Precision</button>
+      </div>
+
+      <ol id="stepper">
+        <li data-stage="queued">Queued</li>
+        <li data-stage="extracting_frames">Frames</li>
+        <li data-stage="masking">Mask</li>
+        <li data-stage="sparse_reconstruction">SfM</li>
+        <li data-stage="dataset_prep">Data</li>
+        <li data-stage="training">Train</li>
+        <li data-stage="rendering">Render</li>
+        <li data-stage="done">Done</li>
+      </ol>
+
+      <div class="collab-avatars">
+        <div class="collab-avatar online" data-color="cyan">Y</div>
+        <div class="collab-avatar online" data-color="amber">A</div>
+        <div class="collab-avatar" data-color="purple">S</div>
+        <span class="collab-count">2</span>
+      </div>
+
+      <label class="upload-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload
+        <input type="file" id="video-input" accept="video/*" hidden />
+      </label>
+    </header>
+
+    <!-- Main Layout -->
+    <div id="layout">
+
+      <!-- Icon Sidebar -->
+      <aside id="sidebar">
+        <nav>
+          <a href="#" class="nav-item active" data-page="mission" data-tooltip="Mission">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          </a>
+          <a href="#" class="nav-item" data-page="history" data-tooltip="History">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </a>
+          <a href="#" class="nav-item" data-page="settings" data-tooltip="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </a>
+        </nav>
+        <div class="sidebar-footer">
+          <label class="local-load-btn" data-tooltip="Load .ply file">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            <input type="file" id="local-splat-input" accept=".ply,.splat,.ksplat" hidden />
+          </label>
+        </div>
+      </aside>
+
+      <!-- Viewer -->
+      <main id="viewer-panel">
+        <div id="splat-container"></div>
+
+        <div id="viewer-empty-state">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/></svg>
+          </div>
+          <p>No reconstruction loaded</p>
+          <p class="hint">Upload a flight or load a .ply file</p>
+        </div>
+
+        <div id="measure-panel" class="measure-panel">
+          <span class="label">Distance</span>
+          <span class="value" id="measure-value">0.00 m</span>
+          <button id="measure-clear">Clear</button>
+          <button id="measure-done">Done</button>
+        </div>
+
+        <div id="minimap">
+          <div class="minimap-header">
+            <span class="minimap-label">Flight path</span>
+            <span class="minimap-status" id="minimap-status">standby</span>
+          </div>
+          <canvas id="minimap-canvas"></canvas>
+        </div>
+
+        <div id="viewer-tools">
+          <button data-tool="measure" title="Measure (M)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>
+            Measure
+          </button>
+          <button data-tool="anomalies" title="Anomalies">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Anomalies
+          </button>
+          <button data-tool="export" title="Export (Ctrl+E)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </button>
+        </div>
+
+        <div id="viewer-info">
+          <div class="viewer-info-chip">
+            <span class="dot"></span>
+            <span id="viewer-fps">-- fps</span>
+          </div>
+          <div class="viewer-info-chip" id="viewer-splats-chip" style="display:none">
+            <span id="viewer-splats">0</span> splats
+          </div>
+        </div>
+
+        <div id="history-panel">
+          <div class="history-header">
+            <div class="history-title">Mission History</div>
+            <button class="history-close" id="history-close">Back</button>
+          </div>
+          <div class="history-list" id="history-list">
+            <div class="history-empty">No missions yet.</div>
+          </div>
+        </div>
+
+        <!-- Floating property panel (inside viewer, over canvas) -->
+        <aside id="rightrail">
+          <div class="rail-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Scan Metrics
+          </div>
+
+          <div class="stat">
+            <span class="stat-label">Coverage</span>
+            <span class="stat-value placeholder" id="stat-coverage">&mdash;</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Area</span>
+            <span class="stat-value placeholder" id="stat-area">&mdash;</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Anomalies</span>
+            <span class="stat-value placeholder" id="stat-anomalies">&mdash;</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Status</span>
+            <span class="stat-value" id="stat-status">idle</span>
+          </div>
+
+          <div class="rail-section-title" style="margin-top: 0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Detected Issues
+          </div>
+          <div class="anomaly-section" id="anomaly-list">
+            <div style="font-size: 10px; color: var(--text-dim); padding: 6px 10px;">No issues detected.</div>
+          </div>
+        </aside>
+      </main>
+
+    </div>
+
+    <!-- Status Bar -->
+    <div id="statusbar">
+      <div class="status-item">
+        <span class="status-label">Mode:</span>
+        <span class="status-val status-accent" id="status-mode">Rapid</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Pipeline:</span>
+        <span class="status-val" id="status-pipeline">idle</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Frames:</span>
+        <span class="status-val" id="status-frames">0</span>
+      </div>
+      <span class="status-spacer"></span>
+      <div class="status-item">
+        <span class="status-val status-green">●</span>
+        <span class="status-label">Backend connected</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">AEROMESH v0.1.0</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
