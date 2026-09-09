@@ -7,7 +7,7 @@
 FROM node:20-alpine AS frontend-build
 WORKDIR /build
 COPY aeromesh-frontend/aeromesh-frontend/package*.json ./
-RUN npm ci --production=false
+RUN npm install
 COPY aeromesh-frontend/aeromesh-frontend/ ./
 RUN npm run build
 
@@ -25,12 +25,8 @@ COPY aeromesh-backend/aeromesh-backend/ .
 # Copy built frontend into backend's static dir
 COPY --from=frontend-build /build/dist ./static
 
-# Copy the splat model into outputs (if it exists)
-# Users should volume-mount or pre-copy their splat.ply here
+# Ensure output directories exist
 RUN mkdir -p outputs uploads
 
-# Expose port
-EXPOSE 8000
-
-# Run
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run using the $PORT environment variable (defaults to 8000)
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
