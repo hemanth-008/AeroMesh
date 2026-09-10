@@ -148,7 +148,10 @@
 
         <div id="minimap">
           <div class="minimap-header">
-            <span class="minimap-label">Flight path</span>
+            <span class="minimap-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              Flight path
+            </span>
             <span class="minimap-status" id="minimap-status">standby</span>
           </div>
           <canvas id="minimap-canvas"></canvas>
@@ -189,33 +192,42 @@
           </div>
         </div>
 
-        <!-- Floating property panel (inside viewer, over canvas) -->
         <aside id="rightrail">
           <div class="rail-section-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             Scan Metrics
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
 
           <div class="stat">
-            <span class="stat-label">Coverage</span>
-            <span class="stat-value placeholder" id="stat-coverage">&mdash;</span>
+            <div class="stat-field">
+              <span class="stat-value placeholder" id="stat-coverage">&mdash;</span>
+              <span class="stat-label">Cov %</span>
+            </div>
           </div>
           <div class="stat">
-            <span class="stat-label">Area</span>
-            <span class="stat-value placeholder" id="stat-area">&mdash;</span>
+            <div class="stat-field">
+              <span class="stat-value placeholder" id="stat-area">&mdash;</span>
+              <span class="stat-label">Area m²</span>
+            </div>
           </div>
           <div class="stat">
-            <span class="stat-label">Anomalies</span>
-            <span class="stat-value placeholder" id="stat-anomalies">&mdash;</span>
+            <div class="stat-field">
+              <span class="stat-value placeholder" id="stat-anomalies">&mdash;</span>
+              <span class="stat-label">Anomalies</span>
+            </div>
           </div>
           <div class="stat">
-            <span class="stat-label">Status</span>
-            <span class="stat-value" id="stat-status">idle</span>
+            <div class="stat-field">
+              <span class="stat-value" id="stat-status">idle</span>
+              <span class="stat-label">Status</span>
+            </div>
           </div>
 
           <div class="rail-section-title" style="margin-top: 0;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             Detected Issues
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="anomaly-section" id="anomaly-list">
             <div style="font-size: 10px; color: var(--text-dim); padding: 6px 10px;">No issues detected.</div>
