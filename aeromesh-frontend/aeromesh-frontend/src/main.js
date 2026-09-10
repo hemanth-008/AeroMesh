@@ -180,11 +180,53 @@ function setStepper(status) {
   const idx = PIPELINE_STAGES.indexOf(status);
   document.querySelectorAll('#stepper li').forEach((li) => {
     const liIdx = PIPELINE_STAGES.indexOf(li.dataset.stage);
-    li.classList.toggle('active', liIdx === idx);
-    li.classList.toggle('complete', liIdx < idx);
+    
+    // Clear previous states
+    li.classList.remove('active', 'complete', 'pulse');
+    
+    if (liIdx === idx) {
+      li.classList.add('active', 'pulse');
+      li.innerHTML = li.dataset.stageName || li.textContent;
+    } else if (liIdx < idx) {
+      li.classList.add('complete');
+      li.dataset.stageName = li.dataset.stageName || li.textContent;
+      li.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> ` + li.dataset.stageName;
+    } else {
+      li.innerHTML = li.dataset.stageName || li.textContent;
+    }
   });
   statusPipeline.textContent = status.replace(/_/g, ' ');
 }
+
+// ── Floating Panels / Collapsible ──
+
+document.querySelectorAll('.rail-section-title').forEach(title => {
+  title.addEventListener('click', () => {
+    const targetId = title.dataset.target;
+    if (!targetId) return;
+    const body = document.getElementById(targetId);
+    if (!body) return;
+    
+    const isCollapsed = title.classList.toggle('collapsed');
+    
+    if (isCollapsed) {
+      body.style.height = body.scrollHeight + 'px'; // Set explicit height first
+      body.offsetHeight; // force reflow
+      body.style.height = '0px';
+      body.style.opacity = '0';
+      title.querySelector('.chevron').style.transform = 'rotate(-90deg)';
+      title.style.borderBottom = 'none';
+    } else {
+      body.style.height = body.scrollHeight + 'px';
+      body.style.opacity = '1';
+      title.querySelector('.chevron').style.transform = 'rotate(0deg)';
+      title.style.borderBottom = '';
+      
+      // Remove hardcoded height after transition so it can grow
+      setTimeout(() => { if (!title.classList.contains('collapsed')) body.style.height = 'auto'; }, 250);
+    }
+  });
+});
 
 // ── Upload + Poll ──
 
@@ -420,7 +462,7 @@ document.querySelectorAll('#viewer-tools button').forEach((btn) => {
     }
 
     if (tool === 'export') {
-      document.getElementById('export-modal').classList.add('visible');
+      document.getElementById('export-popover').classList.add('visible');
     }
   });
 });
@@ -481,7 +523,7 @@ document.getElementById('export-screenshot').addEventListener('click', () => {
       showToast('Screenshot saved');
     }
   } catch { showToast('Screenshot failed'); }
-  document.getElementById('export-modal').classList.remove('visible');
+  document.getElementById('export-popover').classList.remove('visible');
 });
 
 document.getElementById('export-report').addEventListener('click', () => {
@@ -491,7 +533,7 @@ document.getElementById('export-report').addEventListener('click', () => {
   link.href = URL.createObjectURL(blob);
   link.click();
   showToast('Report exported');
-  document.getElementById('export-modal').classList.remove('visible');
+  document.getElementById('export-popover').classList.remove('visible');
 });
 
 document.getElementById('export-model').addEventListener('click', () => {
@@ -507,7 +549,7 @@ document.getElementById('export-model').addEventListener('click', () => {
   } else {
     showToast('No model available');
   }
-  document.getElementById('export-modal').classList.remove('visible');
+  document.getElementById('export-popover').classList.remove('visible');
 });
 
 function generateReport() {
@@ -541,14 +583,16 @@ ${(!r.anomalies?.length) ? '<p style="color:#888">No anomalies detected.</p>' : 
 
 // ── Modal Close ──
 
-document.querySelectorAll('[data-close-modal]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.getElementById(btn.dataset.closeModal).classList.remove('visible');
+  document.getElementById('close-export').addEventListener('click', () => {
+    document.getElementById('export-popover').classList.remove('visible');
   });
-});
 
-document.querySelectorAll('.modal-backdrop').forEach(b => {
-  b.addEventListener('click', (e) => { if (e.target === b) b.classList.remove('visible'); });
+  // Hotkeys
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'e') {
+      e.preventDefault();
+      document.getElementById('export-popover').classList.toggle('visible');
+    }
 });
 
 // ── Navigation ──
@@ -695,7 +739,7 @@ document.addEventListener('keydown', (e) => {
 
   if (e.ctrlKey && e.key === 'e') {
     e.preventDefault();
-    document.getElementById('export-modal').classList.add('visible');
+    document.getElementById('export-popover').classList.add('visible');
   }
 
   if (e.key === 'm' && !e.ctrlKey && document.activeElement.tagName !== 'INPUT') {

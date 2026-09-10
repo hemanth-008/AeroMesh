@@ -53,6 +53,14 @@
   --statusbar-h:  24px;
   --icon-bar-w:   40px;
   --r:            4px;
+
+  /* Motion & Elevation (V2) */
+  --shadow-floating: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.8);
+  --ease-out:        cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out:     cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast:        150ms;
+  --dur-panel:       250ms;
 }
 
 /* ═══════ Reset ═══════ */
@@ -106,10 +114,19 @@ html, body {
 }
 
 .loading-logo {
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-bright);
+  color: var(--text-heading);
   letter-spacing: 0.12em;
+}
+
+.brand-svg {
+  width: 24px;
+  height: 24px;
+  color: var(--accent);
 }
 
 .loading-bar {
@@ -159,14 +176,18 @@ html, body {
   border-right: 1px solid var(--border-dim);
 }
 
-.brand-icon { color: var(--accent); display: flex; align-items: center; }
-.brand-icon svg { width: 14px; height: 14px; }
+.brand-icon { 
+  color: var(--accent); 
+  display: flex; 
+  align-items: center; 
+}
+.brand-icon svg { width: 16px; height: 16px; }
 
 .brand-text {
   font-weight: 600;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-heading);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 
 .brand-tag {
@@ -253,12 +274,13 @@ html, body {
   letter-spacing: 0.02em;
 }
 
-#stepper li.active {
-  color: var(--accent);
+#stepper li.pulse {
+  animation: step-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-#stepper li.complete {
-  color: var(--text-muted);
+@keyframes step-pulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 8px var(--accent); }
+  50% { opacity: 0.6; text-shadow: none; }
 }
 
 /* Collab — minimal dots */
@@ -657,28 +679,31 @@ html, body {
 .measure-panel button:hover { color: var(--text); background: var(--panel-hover); }
 
 /* ═══════════════════════════════════════════════
-   RIGHT PANEL — Floating property panel (SuperSplat style)
+   FLOATING PANELS (V2)
    ═══════════════════════════════════════════════ */
 
-#rightrail {
+.floating-panel {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  bottom: calc(var(--statusbar-h) + 7px);
-  width: 240px;
   z-index: 20;
-  background: var(--panel);
+  background: rgba(21, 21, 21, 0.95);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border);
   border-radius: var(--r);
+  box-shadow: var(--shadow-floating);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
   pointer-events: auto;
+  overflow: hidden;
+  transition: height var(--dur-panel) var(--ease-in-out);
 }
 
-/* Make viewer info move left when right panel exists */
-#viewer-info {
-  right: 252px;
+.floating-panel .panel-body {
+  transition: opacity var(--dur-fast) var(--ease-in-out);
+}
+
+.floating-panel.collapsed .panel-body {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .rail-section-title {
@@ -694,12 +719,7 @@ html, body {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-}
-
-.rail-section-title svg.icon {
-  width: 12px;
-  height: 12px;
-  color: var(--accent);
+  user-select: none;
 }
 
 .rail-section-title svg.chevron {
@@ -707,6 +727,22 @@ html, body {
   height: 12px;
   margin-left: auto;
   color: var(--text-dim);
+  transition: transform var(--dur-fast) var(--ease-in-out);
+}
+
+.floating-panel.collapsed .rail-section-title svg.chevron {
+  transform: rotate(-90deg);
+}
+.floating-panel.collapsed .rail-section-title {
+  border-bottom: none;
+}
+
+#rightrail {
+  top: 6px;
+  right: 6px;
+  width: 240px;
+  /* Max height to fit inside viewport cleanly */
+  max-height: calc(100% - var(--statusbar-h) - 40px);
 }
 
 .stat {
@@ -812,53 +848,35 @@ html, body {
 .status-item .status-label { color: var(--text-dim); }
 .status-item .status-val { color: var(--text-muted); }
 .status-accent { color: var(--accent); }
-.status-spacer { flex: 1; }
-.status-green { color: var(--green); }
+.status-green { color: var(--green); animation: dot-pulse 2s infinite; }
+
+@keyframes dot-pulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
 
 /* ═══════════════════════════════════════════════
-   MODALS
+   POPOVERS
    ═══════════════════════════════════════════════ */
 
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+#export-popover {
+  bottom: 60px; /* Above the toolbar */
+  left: 50%;
+  transform: translateX(-50%) scale(0.95);
+  transform-origin: bottom center;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.12s;
+  transition: all var(--dur-fast) var(--ease-out);
+  width: 260px;
+  height: auto;
 }
 
-.modal-backdrop.visible { opacity: 1; visibility: visible; }
-
-.modal {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 0;
-  min-width: 320px;
-  max-width: 420px;
-  overflow: hidden;
+#export-popover.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) scale(1);
 }
-
-.modal-title {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-heading);
-  padding: 8px 12px;
-  background: var(--panel-header);
-  border-bottom: 1px solid var(--border-dim);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.modal-title svg { width: 12px; height: 12px; color: var(--accent); }
 
 .modal-close {
   margin-left: auto;
@@ -909,16 +927,29 @@ html, body {
 
 #history-panel {
   position: absolute;
-  inset: 0;
+  top: 6px;
+  left: 6px;
+  bottom: calc(var(--statusbar-h) + 7px);
+  width: 320px;
   z-index: 500;
-  background: var(--panel);
+  background: rgba(21, 21, 21, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-floating);
   padding: 12px;
   overflow-y: auto;
-  transform: translateX(-100%);
-  transition: transform 0.15s ease;
+  transform: translateX(-120%);
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--dur-panel) var(--ease-out);
 }
 
-#history-panel.visible { transform: translateX(0); }
+#history-panel.visible { 
+  transform: translateX(0); 
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .history-header {
   display: flex;
