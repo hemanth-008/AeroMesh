@@ -698,7 +698,8 @@ html, body {
 }
 
 .floating-panel .panel-body {
-  transition: opacity var(--dur-fast) var(--ease-in-out);
+  transition: opacity var(--dur-fast) var(--ease-in-out), height var(--dur-panel) var(--ease-in-out);
+  overflow: hidden;
 }
 
 .floating-panel.collapsed .panel-body {
@@ -720,6 +721,14 @@ html, body {
   gap: 8px;
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
+}
+
+.rail-section-title svg.icon {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 .rail-section-title svg.chevron {
