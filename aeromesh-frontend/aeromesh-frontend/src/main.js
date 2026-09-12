@@ -98,10 +98,12 @@ resizeViewer();
 
 async function loadSplat(url, format = null) {
   if (sceneLoaded) {
-    sessionStorage.setItem('aeromesh_reload_splat', url);
-    if (format !== null) sessionStorage.setItem('aeromesh_reload_format', format.toString());
-    window.location.reload();
-    return;
+    try {
+      await viewer.removeSplatScene(0, false);
+      sceneLoaded = false;
+    } catch (e) {
+      console.warn("Could not remove old scene:", e);
+    }
   }
 
   emptyState.classList.add('hidden');
@@ -269,10 +271,10 @@ localSplatInput.addEventListener('change', async (e) => {
   
   let format = null;
   const name = file.name.toLowerCase();
-  if (name.endsWith('.ply')) format = GaussianSplats3D.SceneFormat.Ply;
-  else if (name.endsWith('.ksplat')) format = GaussianSplats3D.SceneFormat.KSplat;
-  else if (name.endsWith('.splat')) format = GaussianSplats3D.SceneFormat.Splat;
-  else if (name.endsWith('.spz')) format = GaussianSplats3D.SceneFormat.Spz;
+  if (name.endsWith('.ply')) format = 0;
+  else if (name.endsWith('.ksplat')) format = 2;
+  else if (name.endsWith('.splat')) format = 1;
+  else if (name.endsWith('.spz')) format = 3;
 
   showToast('Loading local file: ' + file.name);
   
